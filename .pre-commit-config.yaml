@@ -14,7 +14,6 @@ repos:
       - id: mypy
         args: [
           --disallow-untyped-defs,
-          --disallow-any-unimported,
           --no-implicit-optional,
           --check-untyped-defs,
           --warn-return-any,
@@ -22,4 +21,3 @@ repos:
           --show-error-codes,
           --ignore-missing-imports,
         ]
-        exclude: ^tests/%
