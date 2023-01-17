@@ -4,7 +4,11 @@ import pytest
 from django.utils import timezone
 
 from authentication.services import create_user
-from tickets.selectors import get_assigned_qa_tickets
+from tickets.selectors import (
+    get_assigned_qa_tickets,
+    get_assigned_tickets,
+    get_created_tickets,
+)
 from tickets.services import create_ticket, assign_qa
 
 today = timezone.now()
@@ -22,6 +26,34 @@ def test_user_can_create_a_ticket_and_assign_it_to_another_user():
         eta=next_week,
     )
     assert ticket.assigned_to == jane
+
+
+@pytest.mark.django_db
+def test_can_fetch_all_assigned_tickets_of_a_user():
+    john = create_user(email="john@example.com")
+    jane = create_user(email="jane@example.com")
+    for i in range(3):
+        create_ticket(
+            created_by=john,
+            assigned_to=jane,
+            problem_statement="The client is requesting changes for the existing API",
+            eta=next_week,
+        )
+    assert len(get_assigned_tickets(user=jane)) == 3
+
+
+@pytest.mark.django_db
+def test_can_fetch_all_created_tickets_of_a_user():
+    john = create_user(email="john@example.com")
+    jane = create_user(email="jane@example.com")
+    for i in range(3):
+        create_ticket(
+            created_by=john,
+            assigned_to=jane,
+            problem_statement="The client is requesting changes for the existing API",
+            eta=next_week,
+        )
+    assert len(get_created_tickets(user=john)) == 3
 
 
 @pytest.mark.django_db
