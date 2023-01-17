@@ -13,3 +13,6 @@ class Ticket(models.Model):
     )
     problem_statement = models.TextField()
     eta = models.DateTimeField()
+    assigned_qa = models.ForeignKey(
+        User, related_name="assigned_tickets_as_qa", on_delete=models.CASCADE, null=True
+    )

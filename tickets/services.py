@@ -15,3 +15,10 @@ def create_ticket(
     )
 
     return ticket
+
+
+def assign_qa(*, ticket: Ticket, qa: User) -> Ticket:
+    ticket.assigned_qa = qa
+    ticket.save()
+
+    return ticket
