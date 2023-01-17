@@ -4,12 +4,14 @@ import pytest
 from django.utils import timezone
 
 from authentication.services import create_user
+from tickets.exceptions import UserNotTheAssignedQA
+from tickets.models import Ticket
 from tickets.selectors import (
     get_assigned_qa_tickets,
     get_assigned_tickets,
     get_created_tickets,
 )
-from tickets.services import create_ticket, assign_qa
+from tickets.services import create_ticket, assign_qa, mark_ticket_as
 
 today = timezone.now()
 next_week = today + timedelta(weeks=1)
@@ -101,3 +103,58 @@ def test_can_fetch_all_assigned_tickets_as_qa():
         assign_qa(ticket=ticket, qa=qa_joe)
 
     assert len(get_assigned_qa_tickets(user=qa_joe)) == 3
+
+
+@pytest.mark.django_db
+def test_assigned_qa_can_pass_a_ticket():
+    john = create_user(email="john@example.com")
+    jane = create_user(email="jane@example.com")
+    qa_joe = create_user(email="qa.joe@example.com")
+
+    ticket = create_ticket(
+        created_by=john,
+        assigned_to=jane,
+        problem_statement="The client is requesting changes for the existing API",
+        eta=next_week,
+    )
+    assign_qa(ticket=ticket, qa=qa_joe)
+
+    ticket = mark_ticket_as(ticket=ticket, qa=qa_joe, status=Ticket.QAStatus.PASS)
+
+    assert ticket.qa_status == Ticket.QAStatus.PASS
+
+
+@pytest.mark.django_db
+def test_assigned_qa_can_fail_a_ticket():
+    john = create_user(email="john@example.com")
+    jane = create_user(email="jane@example.com")
+    qa_joe = create_user(email="qa.joe@example.com")
+
+    ticket = create_ticket(
+        created_by=john,
+        assigned_to=jane,
+        problem_statement="The client is requesting changes for the existing API",
+        eta=next_week,
+    )
+    assign_qa(ticket=ticket, qa=qa_joe)
+
+    ticket = mark_ticket_as(ticket=ticket, qa=qa_joe, status=Ticket.QAStatus.FAIL)
+
+    assert ticket.qa_status == Ticket.QAStatus.FAIL
+
+
+@pytest.mark.django_db
+def test_cannot_change_a_tickets_status_if_the_given_user_is_not_the_assigned_qa():
+    john = create_user(email="john@example.com")
+    jane = create_user(email="jane@example.com")
+    qa_joe = create_user(email="qa.joe@example.com")
+
+    ticket = create_ticket(
+        created_by=john,
+        assigned_to=jane,
+        problem_statement="The client is requesting changes for the existing API",
+        eta=next_week,
+    )
+
+    with pytest.raises(UserNotTheAssignedQA):
+        mark_ticket_as(ticket=ticket, qa=qa_joe, status=Ticket.QAStatus.PASS)

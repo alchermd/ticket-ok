@@ -1,0 +1,2 @@
+class UserNotTheAssignedQA(Exception):
+    pass
